@@ -1,10 +1,9 @@
-import json
 from typing import Literal
 
 from pydantic import BaseModel, Field
 
 from talking_bot.db.models import PlanItem
-from talking_bot.llm.client import MODEL, client
+from talking_bot.llm.client import complete_json
 
 _SYSTEM_PROMPT = """\
 Ты — проверяющий модуль переговорной системы. Твоя единственная задача: \
@@ -75,10 +74,8 @@ def check_draft(plan_items: list[PlanItem], candidate_text: str) -> Verdict:
     # Pydantic-схемой, как родной Anthropic SDK. Просим строгий JSON через
     # response_format и парсим сами — Pydantic всё равно проверит форму
     # ответа и упадёт с понятной ошибкой, если модель прислала не то.
-    response = client.chat.completions.create(
-        model=MODEL,
-        max_tokens=2048,
-        messages=[
+    parsed = complete_json(
+        [
             {"role": "system", "content": _SYSTEM_PROMPT},
             {
                 "role": "user",
@@ -91,8 +88,6 @@ def check_draft(plan_items: list[PlanItem], candidate_text: str) -> Verdict:
                     '"rationale": str}. Без пояснений вокруг, только JSON.'
                 ),
             },
-        ],
-        response_format={"type": "json_object"},
+        ]
     )
-    raw = response.choices[0].message.content
-    return Verdict.model_validate(json.loads(raw))
+    return Verdict.model_validate(parsed)

@@ -3,12 +3,14 @@ import logging
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.session.aiohttp import AiohttpSession
+from aiogram.exceptions import TelegramAPIError
 from aiogram.fsm.storage.memory import MemoryStorage
 
 from talking_bot.config import settings
 from talking_bot.control.find_handler import router as find_router
-from talking_bot.control.handlers import router
+from talking_bot.control.handlers import dialog_router, router
 from talking_bot.control.import_handler import router as import_router
+from talking_bot.control.keyboards import BOT_COMMANDS
 
 
 async def main() -> None:
@@ -23,11 +25,19 @@ async def main() -> None:
     # состояние живёт, пока процесс не перезапущен. Если это станет
     # проблемой, меняется на RedisStorage без переделки handlers.py.
     dispatcher = Dispatcher(storage=MemoryStorage())
-    # import_router и find_router — раньше основного: /import_file и /find
-    # должны сработать как команды, а не попасть в обработчик форвардов.
+    # Команды раньше основного роутера: /import_file, /find, /dialog, /dialogs
+    # не должны попасть в обработчик форвардов или F.text-вставку с Авито.
     dispatcher.include_router(import_router)
     dispatcher.include_router(find_router)
+    dispatcher.include_router(dialog_router)
     dispatcher.include_router(router)
+
+    # Меню слева от поля ввода (гамбургер / Menu). Не падаем, если Telegram
+    # временно недоступен — polling всё равно попробует подключиться.
+    try:
+        await bot.set_my_commands(BOT_COMMANDS)
+    except TelegramAPIError:
+        logging.exception("Не удалось установить меню команд бота")
 
     await dispatcher.start_polling(bot)
 

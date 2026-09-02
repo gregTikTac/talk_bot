@@ -1,10 +1,9 @@
 import json
-from typing import Literal
 
 from pydantic import BaseModel
 
 from talking_bot.db.models import Dialog, Message, PlanItem
-from talking_bot.llm.client import MODEL, client
+from talking_bot.llm.client import complete_json
 
 _SYSTEM_PROMPT = """\
 Ты помогаешь вести переговоры с заказчиком в Telegram. Твоя задача — \
@@ -84,14 +83,10 @@ def compose_draft(
         "без ответа. Без пояснений вокруг, только JSON."
     )
 
-    response = client.chat.completions.create(
-        model=MODEL,
-        max_tokens=2048,
-        messages=[
+    parsed = complete_json(
+        [
             {"role": "system", "content": _SYSTEM_PROMPT},
             {"role": "user", "content": user_content},
-        ],
-        response_format={"type": "json_object"},
+        ]
     )
-    raw = response.choices[0].message.content
-    return Draft.model_validate(json.loads(raw))
+    return Draft.model_validate(parsed)

@@ -5,3 +5,4 @@ alembic>=1.13
 pydantic>=2.13
 pydantic-settings>=2.6
 anthropic>=1.1,<2
+openai>=1.0,<3

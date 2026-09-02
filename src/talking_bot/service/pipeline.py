@@ -16,14 +16,18 @@ class PipelineResult:
     verdict: Verdict
 
 
-async def run_pipeline(session: AsyncSession, dialog: Dialog, incoming_text: str) -> PipelineResult:
+async def run_pipeline(
+    session: AsyncSession, dialog: Dialog, incoming_text: str, source: str = "forward"
+) -> PipelineResult:
     """
     Единственный путь из входящего сообщения в готовую карточку для
     оператора: записать сообщение → составить черновик → проверить его.
     Ни один шаг не пропускается — в частности, guard вызывается всегда,
     даже если это первый черновик без правок.
+    source: "forward" (переслали из Telegram) или "paste" (вставили текст,
+    например с Авито).
     """
-    await add_message(session, dialog.id, incoming_text, MessageDirection.IN, source="forward")
+    await add_message(session, dialog.id, incoming_text, MessageDirection.IN, source=source)
 
     plan = await get_active_plan(session, dialog.id)
     plan_items = await get_plan_items(session, plan.id) if plan else []

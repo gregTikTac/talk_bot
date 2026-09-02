@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import DateTime, ForeignKey, JSON, String, Text
+from sqlalchemy import DateTime, ForeignKey, Index, JSON, String, Text, func, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 # Все времена в базе — с явным часовым поясом (UTC). Без этого asyncpg
@@ -17,11 +17,22 @@ class Counterparty(Base):
     __tablename__ = "counterparties"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    tg_user_id: Mapped[int] = mapped_column(unique=True)
+    # NULL у заказчиков без Telegram (Авито и т.п.). Unique допускает
+    # несколько NULL — это нормально; без-tg строки различаем по имени.
+    tg_user_id: Mapped[int | None] = mapped_column(unique=True)
     name: Mapped[str] = mapped_column(String(255))
     notes: Mapped[str | None] = mapped_column(Text, default=None)
 
     dialogs: Mapped[list["Dialog"]] = relationship(back_populates="counterparty")
+
+    __table_args__ = (
+        Index(
+            "uq_counterparties_lower_name_null_tg",
+            func.lower(name),
+            unique=True,
+            postgresql_where=text("tg_user_id IS NULL"),
+        ),
+    )
 
 
 class Dialog(Base):
