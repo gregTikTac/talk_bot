@@ -33,6 +33,12 @@ class FindQuery(StatesGroup):
     waiting_for_query = State()
 
 
+class PlanEdit(StatesGroup):
+    """Ждём текст плана после /plan или кнопки «План»."""
+
+    waiting_for_text = State()
+
+
 async def get_active_dialog_id(state: FSMContext) -> int | None:
     data = await state.get_data()
     raw = data.get(ACTIVE_DIALOG_ID_KEY)

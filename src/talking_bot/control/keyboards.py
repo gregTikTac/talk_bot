@@ -11,6 +11,7 @@ from aiogram.types import (
 
 BTN_DIALOGS = "Диалоги"
 BTN_NEW_DIALOG = "Новый диалог"
+BTN_PLAN = "План"
 BTN_FIND = "Поиск"
 BTN_HELP = "Справка"
 
@@ -18,6 +19,7 @@ BOT_COMMANDS = [
     BotCommand(command="start", description="Справка и настройка группы с темами"),
     BotCommand(command="dialogs", description="Список диалогов"),
     BotCommand(command="dialog", description="Создать или переключить диалог"),
+    BotCommand(command="plan", description="План переговоров активного диалога"),
     BotCommand(command="find", description="Поиск по истории диалога"),
     BotCommand(command="import", description="Как загрузить историю чата"),
     BotCommand(command="import_file", description="Импорт JSON-экспорта (нужен файл)"),
@@ -54,7 +56,8 @@ def main_keyboard() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
             [KeyboardButton(text=BTN_DIALOGS), KeyboardButton(text=BTN_NEW_DIALOG)],
-            [KeyboardButton(text=BTN_FIND), KeyboardButton(text=BTN_HELP)],
+            [KeyboardButton(text=BTN_PLAN), KeyboardButton(text=BTN_FIND)],
+            [KeyboardButton(text=BTN_HELP)],
         ],
         resize_keyboard=True,
         is_persistent=True,

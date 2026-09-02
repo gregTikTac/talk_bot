@@ -15,6 +15,7 @@ from talking_bot.control.keyboards import (
     BTN_FIND,
     BTN_HELP,
     BTN_NEW_DIALOG,
+    BTN_PLAN,
     draft_keyboard,
     main_keyboard,
 )
@@ -22,6 +23,7 @@ from talking_bot.control.states import (
     EditDraft,
     FindQuery,
     NewDialog,
+    PlanEdit,
     NO_ACTIVE_DIALOG_TEXT,
     get_active_dialog_id,
     set_active_dialog_id,
@@ -68,8 +70,9 @@ START_TEXT = (
     "• «Диалоги» — список\n"
     "• «Новый диалог» — создать или переключить по имени\n"
     "• «Поиск» — найти фразу в истории\n"
+    "• «План» — правила переговоров для guard (цена, объём, красные линии)\n"
     "• «Справка» — этот текст\n"
-    "Слева от поля ввода — меню тех же команд (/start, /dialogs, /dialog, /find, /import).\n\n"
+    "Слева от поля ввода — меню тех же команд (/start, /dialogs, /dialog, /plan, /find, /import).\n\n"
     "Как получить окно со списком тем, как в Telegram Desktop\n"
     "Личка с ботом такое окно не рисует. Это супергруппа с темами (Topics / Forum):\n"
     "1. Создайте группу (или возьмите существующую) и сделайте её супергруппой.\n"
@@ -281,6 +284,13 @@ async def btn_find(message: Message, state: FSMContext) -> None:
     await prompt_find(message, state)
 
 
+@dialog_router.message(F.text == BTN_PLAN, _NOT_EDITING, _NOT_FORWARD)
+async def btn_plan(message: Message, state: FSMContext) -> None:
+    from talking_bot.control.plan_handler import prompt_plan
+
+    await prompt_plan(message, state)
+
+
 @dialog_router.message(NewDialog.waiting_for_name, F.text, _NOT_FORWARD)
 async def handle_new_dialog_name(message: Message, state: FSMContext) -> None:
     await _activate_dialog(message, state, message.text or "")
@@ -301,6 +311,24 @@ async def handle_find_query(message: Message, state: FSMContext) -> None:
         await message.answer(err, reply_markup=main_keyboard())
         return
     await run_find(message, query, dialog_id)
+
+
+@dialog_router.message(PlanEdit.waiting_for_text, F.text, _NOT_FORWARD)
+async def handle_plan_text(message: Message, state: FSMContext) -> None:
+    from talking_bot.control.plan_handler import save_plan_text
+
+    raw = (message.text or "").strip()
+    if not raw:
+        await message.answer("Пустой текст. Пришлите пункты плана.", reply_markup=main_keyboard())
+        return
+    dialog_id, err = await operator_dialog_id(message, state)
+    if err:
+        await state.set_state(None)
+        await message.answer(err, reply_markup=main_keyboard())
+        return
+    ok = await save_plan_text(message, raw, dialog_id)
+    if ok:
+        await state.set_state(None)
 
 
 @router.message(F.forward_date | F.forward_origin)

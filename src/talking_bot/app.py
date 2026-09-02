@@ -11,6 +11,7 @@ from talking_bot.control.find_handler import router as find_router
 from talking_bot.control.handlers import dialog_router, router
 from talking_bot.control.import_handler import router as import_router
 from talking_bot.control.keyboards import BOT_COMMANDS
+from talking_bot.control.plan_handler import router as plan_router
 
 
 async def main() -> None:
@@ -29,6 +30,7 @@ async def main() -> None:
     # не должны попасть в обработчик форвардов или F.text-вставку с Авито.
     dispatcher.include_router(import_router)
     dispatcher.include_router(find_router)
+    dispatcher.include_router(plan_router)
     dispatcher.include_router(dialog_router)
     dispatcher.include_router(router)
 
